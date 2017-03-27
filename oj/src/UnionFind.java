@@ -2,6 +2,7 @@
 public class UnionFind {
 	int[] id ;
 	int[] size;
+	int cnt = 0;
 	public UnionFind(int n){
 		id = new int[n+1];
 		size = new int[n+1];
@@ -9,6 +10,7 @@ public class UnionFind {
 			id[i] = i;
 			size[i] = 1;
 		}
+		cnt = n;
 	}
 	public  boolean connected(int p, int q) {	
 		return findRoot(p) == findRoot(q);
@@ -31,5 +33,6 @@ public class UnionFind {
 			id[pRoot] = qRoot;
 			size[pRoot]++;
 		}
+		cnt--;
 	}
 }

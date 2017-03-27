@@ -1,100 +1,108 @@
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.io.StreamTokenizer;
-import java.util.Comparator;
-import java.util.LinkedList;
-import java.util.PriorityQueue;
-import java.util.Queue;
+
+import java.io.*;
+import java.util.*;
 
 public class RegistrationDay {
-	static StreamTokenizer in = new StreamTokenizer(new BufferedReader(new InputStreamReader(System.in)));  
-	static PrintWriter out = new PrintWriter(new OutputStreamWriter(System.out));        
-	public static int nextInt()throws IOException {in.nextToken();return (int)in.nval;}  
-	public static String next()throws IOException {in.nextToken();return (String)in.sval;}       
-	static int n, m , k;
-	static class Stu{
+	// Scanner scan = new Scanner(System.in);
+	BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+	StreamTokenizer in = new StreamTokenizer(new BufferedReader(new InputStreamReader(System.in)));  
+	PrintWriter out = new PrintWriter(new OutputStreamWriter(System.out));        
+	public  int nextInt()throws IOException {in.nextToken();return (int)in.nval;}  
+	public  double nextDouble()throws IOException {in.nextToken();return (double)in.nval;} 
+	public  String next()throws IOException {in.nextToken();return (String)in.sval;} 
+	
+	int n;
+	int m;
+	int k;
+	Student[] stus;
+	int[] officeTime;
+	private class Student{
 		int id;
-		int finish;
-		Queue<Pce> pceList;
-		public Stu(int id) {
-			super();
-			this.id = id;
-			pceList = new LinkedList<Pce>();
+		int arrT;
+		int leaveT;
+		ArrayList<Procedure> pList;
+		int curProcess;
+		
+		Procedure getCurProcedure(){
+			return pList.get(curProcess);
 		}
-		boolean hasNextPce(){
-			return !pceList.isEmpty();
-		}
-		void updateNextPce(int arriveTime){
-			pceList.peek().arrTime = arriveTime;
-		}
-		Pce removeNextPce(){
-			return pceList.poll();
-		}
+		
 	}
-	static class Pce{
+	private class Procedure implements Comparable<Procedure>{
+		Student stu;
+		int arrT = Integer.MAX_VALUE;
 		int office;
-		int arrTime;
 		int time;
-		Stu stu;
-		public Pce(int office, int arrTime, int time, Stu stu) {
-			super();
-			this.office = office;
-			this.arrTime = arrTime;
-			this.time = time;
-			this.stu = stu;
+		
+		@Override
+		public int compareTo(Procedure o) {
+			if(arrT != o.arrT)
+				return arrT - o.arrT;
+			
+			return this.stu.id - o.stu.id;			
 		}
-		public String toString(){
-			return "stu:"+stu.id+" office:"+office+" arrive at"+arrTime+" time:"+time;
+		
+		Procedure processAndGetNext(){						
+			officeTime[office] = Math.max(officeTime[office], arrT);
+			officeTime[office] += time;
+			
+			stu.curProcess++;	
+			if(stu.curProcess >= stu.pList.size()){
+				stu.leaveT = officeTime[office];
+				return null;
+			}
+			
+			Procedure p =  stu.getCurProcedure();		
+			p.arrT = officeTime[office] + k;
+			return p;
+		}
+		
+	}
+
+	public static void main(String[] args) throws IOException{	
+		RegistrationDay main = new RegistrationDay();
+		main.run();
+	}
+	public void  run() throws IOException{
+		input();
+		PriorityQueue<Procedure> pq = new PriorityQueue<Procedure>(n);
+		for(int i = 1 ; i <= n ; i++){
+			pq.offer(stus[i].getCurProcedure());
+		}
+		while(!pq.isEmpty()){
+			Procedure p = pq.poll();
+			Procedure next = p.processAndGetNext();
+			if(next != null)
+				pq.offer(next);
+		}
+		for(int i = 1 ; i <= n ; i++){
+			System.out.println(stus[i].leaveT);
 		}
 	}
-	public static void main(String[] args) throws IOException {
+	private void input() throws IOException{
 		n = nextInt();
 		m = nextInt();
 		k = nextInt();
-		Stu[] stus = new Stu[n];
-		PriorityQueue<Pce> queue = new PriorityQueue<>(100,new Comparator<Pce>(){
-			@Override
-			public int compare(Pce o1, Pce o2) {
-				if(o1.arrTime!=o2.arrTime)
-					return o1.arrTime - o2.arrTime;
-				else
-					return o1.stu.id - o2.stu.id;
-			}			
-		});
-		for(int i = 0 ; i < n; i++){
-			Stu stu = new Stu(nextInt());//id
-			int arrTime = nextInt();
-			int pceNum = nextInt();
-			for(int j = 0; j < pceNum; j++){
-				Pce pce = new Pce(nextInt(),-1,nextInt(),stu);
-				stu.pceList.offer(pce);
+		stus = new Student[n+1];
+		officeTime = new int[m+1];
+		for(int i = 1 ; i <= n ; i++){
+			stus[i] = new Student();
+			stus[i].id = nextInt();
+			stus[i].arrT = nextInt();
+			int cnt = nextInt();
+			stus[i].pList = new ArrayList<Procedure>(cnt);
+			for(int j = 0 ; j < cnt ; j++){
+				Procedure p = new Procedure();
+				p.stu = stus[i];
+				p.office = nextInt();
+				p.time = nextInt();
+				if(j == 0)
+					p.arrT = stus[i].arrT+k;
+				stus[i].pList.add(p);
 			}
-			Pce firstPce = stu.removeNextPce();
-			firstPce.arrTime = arrTime + k;			
-			queue.offer(firstPce);
-			stus[i] = stu;
-		}
-		int[] t = new int[m+1];//每个部门维护一条时间线
-		while(!queue.isEmpty()){
-			Pce pce = queue.poll();
-			Stu stu = pce.stu;
-			int office = pce.office;
-			if(pce.arrTime > t[office])//到达时间大于部门现在时间，说明部门空闲，将部门时间推移到学生的到达时间
-				t[office] = pce.arrTime;
-			t[office] += pce.time; //处理手续
-			if(!stu.hasNextPce()){
-				stu.finish = t[office];
-			}
-			else{
-				stu.updateNextPce(t[office]+k);//更新学生的下一个手续到达时间
-				queue.offer(stu.removeNextPce());
-			}			
-		}
-		for(int i = 0 ; i < n; i++){
-			System.out.println(stus[i].finish);
+			stus[i].curProcess = 0;
 		}
 	}
 }
+
+

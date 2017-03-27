@@ -1,78 +1,64 @@
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.Scanner;
+
+import java.io.*;
 
 public class DemoDay {
-	static BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-	static int n,m;
-	static boolean[][] maze;
-	static int[][][]dp;
-	public static void main(String[] args) throws IOException {
-		String[] line = reader.readLine().split(" ");
+	// Scanner scan = new Scanner(System.in);
+	BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+	StreamTokenizer in = new StreamTokenizer(new BufferedReader(new InputStreamReader(System.in)));  
+	PrintWriter out = new PrintWriter(new OutputStreamWriter(System.out));        
+	public  int nextInt()throws IOException {in.nextToken();return (int)in.nval;}  
+	public  double nextDouble()throws IOException {in.nextToken();return (double)in.nval;} 
+	public  String next()throws IOException {in.nextToken();return (String)in.sval;} 	
+	
+	int n;
+	int m;
+	boolean[][] obstacle;
+	public static void main(String[] args) throws IOException{	
+		DemoDay main = new DemoDay();
+		main.input();
+		main.run();
+	}
+	public void  run(){
+		int[][][] dp = new int[n+1][m+1][2];
+		for(int i = 1 ; i <= n ; i++)
+			dp[i][0][0] = dp[i][0][1] = Integer.MAX_VALUE;
+		for(int j = 1 ; j <= m ; j++)
+			dp[0][j][0] = dp[0][j][1] = Integer.MAX_VALUE;		
+		dp[1][0][0] = 0;
+		for(int i = 1 ; i <= n ; i++){
+			for(int j = 1 ; j <= m ; j++){
+				dp[i][j][0] = dp[i][j-1][0];
+				if(dp[i][j-1][1] != Integer.MAX_VALUE)
+					dp[i][j][0] = Math.min(dp[i][j][0], dp[i][j-1][1]+(i==n||obstacle[i+1][j-1]? 0:1));
+				
+				dp[i][j][1] = dp[i-1][j][1];
+				if(dp[i-1][j][0] != Integer.MAX_VALUE)
+				dp[i][j][1] = Math.min(dp[i][j][1], dp[i-1][j][0]+(j==m||obstacle[i-1][j+1]? 0:1));
+				
+				if(obstacle[i][j]){
+					if(dp[i][j][0] != Integer.MAX_VALUE) 
+						dp[i][j][0]++;
+					if(dp[i][j][1] != Integer.MAX_VALUE) 
+						dp[i][j][1]++;
+				}
+			}
+		}
+		System.out.println(Math.min(dp[n][m][0], dp[n][m][1]));
+	}
+	private void input() throws IOException{
+		String[] line = reader.readLine().split("\\s+");
 		n = Integer.parseInt(line[0]);
 		m = Integer.parseInt(line[1]);
-		maze = new boolean[n][m];
-		dp = new int[n][m][2];
-		//System.out.println(n+" "+m);
-		for(int i = 0 ; i < n; i++){
-			for(int j = 0 ; j < m; j++){
+		obstacle = new boolean[n+1][m+1];
+		for(int i = 1 ; i <= n ; i++){
+			for(int j = 1 ; j <= m ; j++){
 				char c = (char)reader.read();
-				if     (c == '.') maze[i][j] = true;
-				else if(c == 'b') maze[i][j] = false;
-				//System.out.print(c);
+				if(c == 'b')
+					obstacle[i][j] = true;
 			}
 			reader.readLine();
-			//System.out.println();
 		}
-		work();
 	}
-	private static void work() {
-		for(int x = 0 ; x < n; x++){
-			for(int y = 0 ; y < m; y++){
-				dp[x][y][0] = dp[x][y][1] = Integer.MAX_VALUE - 1;
-			}
-		}
-		dp[0][0][1] = dp[0][0][0] = (maze[0][0]? 0 : 1);
-		if(m > 1&& maze[0][1])
-			dp[0][0][1]++;
-		
-		for(int x = 0 ; x < n; x++){
-			for(int y = 0 ; y < m; y++){
-				if(x == 0 && y == 0){
-					//System.out.print(dp[x][y][0] +" " + dp[x][y][1] +" ; ");
-					continue;
-				}	
-				//x不等于0说明x,y可以由方向1到达
-				if(x != 0){
-					//上一个点只可能由1方向到达
-					if		(y == 0)
-							dp[x][y][1] = dp[x - 1][y][1];
-					else if (y == m - 1 || !maze[x - 1][y + 1])//上一个点的0方向本来就不能走
-							dp[x][y][1] = Math.min(dp[x - 1][y][0] , dp[x - 1][y][1]);
-					else
-							dp[x][y][1] = Math.min(dp[x - 1][y][0] + 1 , dp[x - 1][y][1]);//我们让上一个点的0方向不能走
-					
-					if(!maze[x][y]) dp[x][y][1]++;
-				}
-				//y不等于0说明x,y可以由方向0到达
-				if( y != 0){
-					//上一个点只可能由0方向到达
-					if		(x == 0)
-							dp[x][y][0] = dp[x][y - 1][0];
-					//上一个点可能也由0方向到达,但如果由1方向到达,说明它不能继续往1方向走
-					else if (x == n - 1 || !maze[x + 1][y - 1])//上一个点的1方向本来不能走
-							dp[x][y][0] = Math.min(dp[x][y - 1][0] , dp[x][y - 1][1]);
-					else
-							dp[x][y][0] = Math.min(dp[x][y - 1][0] , dp[x][y - 1][1] + 1);//我们让上一个点的1方向不能走	
-					
-					if(!maze[x][y]) dp[x][y][0]++;
-				}
-				//System.out.print(dp[x][y][0] +" " + dp[x][y][1] +" ; ");
-			}
-			//System.out.println();
-		}
-		System.out.println(Math.min(dp[n - 1][m - 1][0] , dp[n - 1][m - 1][1]));
-	}
-
 }
+
+
