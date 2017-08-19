@@ -4,8 +4,8 @@ public class UnionFind {
 	int[] size;
 	int cnt = 0;
 	public UnionFind(int n){
-		id = new int[n+1];
-		size = new int[n+1];
+		id = new int[n];
+		size = new int[n];
 		for(int i = 0 ; i < n ; i++){
 			id[i] = i;
 			size[i] = 1;
@@ -21,9 +21,10 @@ public class UnionFind {
 		}
 		return p;
 	}
-	public  void union(int p, int q) {
+	public  boolean union(int p, int q) {
 		int pRoot = findRoot(p);
 		int qRoot = findRoot(q);
+		if(pRoot == qRoot) return false;
 		assert( (id[pRoot] == pRoot) &(id[qRoot] == qRoot));
 		if(size[pRoot]>size[qRoot]){//q并入p
 			id[qRoot] = pRoot;
@@ -34,5 +35,6 @@ public class UnionFind {
 			size[pRoot]++;
 		}
 		cnt--;
+		return true;
 	}
 }
